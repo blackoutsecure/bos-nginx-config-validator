@@ -5,11 +5,7 @@
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 name: 'Blackout Secure Nginx Config Validator'
-description: >-
-  Pre-merge `nginx -t` validation for an in-repo nginx config tree, with
-  optional `envsubst` rendering of `*.conf.template` files. Runs inside
-  the official `nginx` container so package-managed paths resolve the
-  same way they do at runtime.
+description: 'Pre-merge `nginx -t` validation for in-repo nginx config trees, with `envsubst` template rendering.'
 author: 'Blackout Secure'
 
 branding:
@@ -55,12 +51,33 @@ inputs:
     default: '/run/nginx/http.d'
   nginx_image:
     description: >-
-      Container image used for validation. Pin to a major + flavor (e.g.
-      `1.27-alpine`) so Dependabot's `docker` ecosystem can bump it. Any
-      OCI-compatible nginx image works as long as it ships `nginx` and
-      `envsubst` on `PATH` (the official images do).
+      Container image used for validation. Defaults to the LinuxServer.io
+      nginx image (matches the runtime of the BOS docker-* repos). Any
+      OCI-compatible image works as long as it ships `nginx` on `PATH`;
+      `envsubst` is auto-installed via the image's package manager (apk /
+      apt / dnf / yum) when templates are in use and gettext is missing.
+      Pin to a specific tag so Dependabot's `docker` ecosystem can bump
+      it.
     required: false
-    default: 'docker.io/library/nginx:1.27-alpine'
+    default: 'lscr.io/linuxserver/nginx:latest'
+  auto_fill_unknown_vars:
+    description: >-
+      Fallback value substituted for any `${UPPERCASE_VAR}` reference
+      found in your `*.conf.template` files but **not** declared in
+      `template_vars`. The default `127.0.0.1` makes most templates
+      validate out-of-the-box because the common unmet reference is a
+      literal hostname in `proxy_pass http://${UPSTREAM_HOST}:8000;` —
+      and `nginx -t` resolves literal upstream hostnames at config-load
+      time, so an unresolvable name (or an empty expansion) fails the
+      check. Auto-fills are logged with a `WARNING` and a list of the
+      affected keys so you know to add them to `template_vars`. Set to
+      an empty string (`auto_fill_unknown_vars: ''`) for strict mode
+      where undeclared `${UPPERCASE_VAR}` tokens pass through to nginx
+      untouched and surface as parse errors. The heuristic targets
+      uppercase names only, so nginx-native variables like
+      `${remote_addr}` and `${host}` are never matched.
+    required: false
+    default: '127.0.0.1'
 
 outputs:
   validated:
@@ -78,4 +95,5 @@ runs:
         TEMPLATE_VARS: ${{ inputs.template_vars }}
         TEMPLATES_TARGET_DIR: ${{ inputs.templates_target_dir }}
         NGINX_IMAGE: ${{ inputs.nginx_image }}
+        AUTO_FILL_UNKNOWN_VARS: ${{ inputs.auto_fill_unknown_vars }}
       run: bash "${GITHUB_ACTION_PATH}/src/validate.sh"

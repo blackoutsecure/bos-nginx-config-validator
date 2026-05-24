@@ -232,3 +232,96 @@ EOF
     ! grep -q ":/templates:ro" "${TMP}/docker-argv"
     [[ "${output}" == *"no *.conf.template files"* ]]
 }
+
+# ─── auto_fill_unknown_vars ──────────────────────────────────────────────
+
+@test "auto-fills undeclared \${UPPERCASE_VAR} tokens with default 127.0.0.1" {
+    export TEMPLATE_VARS=""
+    cd "${REPO_ROOT}"
+    run bash "${SCRIPT}"
+    [ "${status}" -eq 0 ]
+    [[ "${output}" == *"auto-filled"* ]]
+    [[ "${output}" == *"127.0.0.1"* ]]
+    [[ "${output}" == *"APP_PORT"* ]]
+    [[ "${output}" == *"UPSTREAM_HOST"* ]]
+    # Both auto-filled keys appear in docker argv as -e KEY=VALUE.
+    grep -qx 'APP_PORT=127.0.0.1' "${TMP}/docker-argv"
+    grep -qx 'UPSTREAM_HOST=127.0.0.1' "${TMP}/docker-argv"
+}
+
+@test "auto-fill respects explicit template_vars (only fills undeclared keys)" {
+    export TEMPLATE_VARS="APP_PORT=9090"
+    cd "${REPO_ROOT}"
+    run bash "${SCRIPT}"
+    [ "${status}" -eq 0 ]
+    [[ "${output}" == *"auto-filled 1"* ]]
+    [[ "${output}" == *"UPSTREAM_HOST"* ]]
+    grep -qx 'APP_PORT=9090' "${TMP}/docker-argv"
+    grep -qx 'UPSTREAM_HOST=127.0.0.1' "${TMP}/docker-argv"
+    # APP_PORT must NOT appear in the auto-fill warning's key list.
+    ! grep -qE '^::warning::.*APP_PORT' <<< "${output}"
+}
+
+@test "auto-fill uses custom value when AUTO_FILL_UNKNOWN_VARS overridden" {
+    export TEMPLATE_VARS=""
+    export AUTO_FILL_UNKNOWN_VARS="placeholder.test"
+    cd "${REPO_ROOT}"
+    run bash "${SCRIPT}"
+    [ "${status}" -eq 0 ]
+    [[ "${output}" == *"placeholder.test"* ]]
+    grep -qx 'APP_PORT=placeholder.test' "${TMP}/docker-argv"
+    grep -qx 'UPSTREAM_HOST=placeholder.test' "${TMP}/docker-argv"
+}
+
+@test "auto-fill opt-out via empty AUTO_FILL_UNKNOWN_VARS logs disabled message" {
+    export TEMPLATE_VARS=""
+    export AUTO_FILL_UNKNOWN_VARS=""
+    cd "${REPO_ROOT}"
+    run bash "${SCRIPT}"
+    [ "${status}" -eq 0 ]  # fake docker still exits 0
+    [[ "${output}" == *"auto-fill disabled"* ]]
+    [[ "${output}" != *"auto-filled"* ]]
+    # No env args for undeclared keys.
+    ! grep -qx 'APP_PORT=127.0.0.1' "${TMP}/docker-argv"
+    ! grep -qx 'UPSTREAM_HOST=127.0.0.1' "${TMP}/docker-argv"
+}
+
+@test "auto-fill ignores lowercase \${var} (nginx-native variable convention)" {
+    # Create a template with both an uppercase envsubst key and a
+    # lowercase nginx-native variable. The latter must NOT be auto-filled.
+    SCRATCH="${REPO_ROOT}/test/output-mixed-case"
+    mkdir -p "${SCRATCH}"
+    cat > "${SCRATCH}/test.conf.template" <<'EOF'
+server {
+    listen 80;
+    location / {
+        proxy_pass http://${BACKEND}:8000;
+        proxy_set_header X-Real-IP ${remote_addr};
+    }
+}
+EOF
+    export TEMPLATES_PATH="test/output-mixed-case"
+    export TEMPLATE_VARS=""
+    cd "${REPO_ROOT}"
+    run bash "${SCRIPT}"
+    rm -rf "${SCRATCH}"
+    [ "${status}" -eq 0 ]
+    # BACKEND is uppercase → auto-filled.
+    grep -qx 'BACKEND=127.0.0.1' "${TMP}/docker-argv"
+    # remote_addr is lowercase → NOT auto-filled, no -e remote_addr=... arg.
+    ! grep -qx 'remote_addr=127.0.0.1' "${TMP}/docker-argv"
+    # Warning lists BACKEND only, not remote_addr.
+    [[ "${output}" == *"BACKEND"* ]]
+    [[ "${output}" != *"remote_addr=127"* ]]
+}
+
+@test "auto-fill no-op when all uppercase vars already declared (no warning)" {
+    export TEMPLATE_VARS=$'APP_PORT=8080\nUPSTREAM_HOST=10.20.30.40'
+    cd "${REPO_ROOT}"
+    run bash "${SCRIPT}"
+    [ "${status}" -eq 0 ]
+    [[ "${output}" != *"auto-filled"* ]]
+    [[ "${output}" != *"auto-fill disabled"* ]]
+    grep -qx 'APP_PORT=8080' "${TMP}/docker-argv"
+    grep -qx 'UPSTREAM_HOST=10.20.30.40' "${TMP}/docker-argv"
+}

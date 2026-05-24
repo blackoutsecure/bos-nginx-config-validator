@@ -70,7 +70,10 @@ Docker is not available.
   for bug reports.
 - Include the failing run URL, sanitized inputs, and the relevant section
   of your `nginx.conf` if applicable.
-- For security issues, see [SECURITY.md](./SECURITY.md).
+- For security issues, follow the organization-wide
+  [Security Policy](https://github.com/blackoutsecure/.github/blob/main/SECURITY.md)
+  and report privately via
+  [GitHub Security Advisories](https://github.com/blackoutsecure/bos-nginx-config-validator/security/advisories/new).
 
 ## License
 
