@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: scope
+    labels:
+      - dependencies
+      - github-actions
+
+  # The nginx image ref lives as the default of `nginx_image` in
+  # `action.yml`. Dependabot's docker ecosystem scans action.yml for
+  # `image:`-style fields; consumers should also enable the `docker`
+  # ecosystem in their own dependabot.yml to track the image themselves.

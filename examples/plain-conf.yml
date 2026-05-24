@@ -1,0 +1,32 @@
+# Example: validate a plain nginx.conf (no *.conf.template tree).
+# Useful when your config is fully static and you only want the syntax /
+# include / module-loading checks that `nginx -t` provides.
+name: Lint nginx config
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'conf/nginx.conf'
+      - '.github/workflows/lint-nginx.yml'
+  pull_request:
+    paths:
+      - 'conf/nginx.conf'
+      - '.github/workflows/lint-nginx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: blackoutsecure/bos-nginx-config-validate@v1
+        with:
+          config_path: conf/nginx.conf
+          templates_path: ''   # disable template rendering entirely

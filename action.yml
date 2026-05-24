@@ -1,0 +1,81 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Blackout Secure Nginx Config Validate
+# Copyright © 2025-2026 Blackout Secure
+# Licensed under Apache License 2.0
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+name: 'Blackout Secure Nginx Config Validate'
+description: >-
+  Pre-merge `nginx -t` validation for an in-repo nginx config tree, with
+  optional `envsubst` rendering of `*.conf.template` files. Runs inside
+  the official `nginx` container so package-managed paths resolve the
+  same way they do at runtime.
+author: 'Blackout Secure'
+
+branding:
+  color: 'green'
+  icon: 'check-circle'
+
+inputs:
+  config_path:
+    description: >-
+      Repo-relative path to your `nginx.conf` (no leading `./`). Mounted
+      read-only into the validation container at `/etc/nginx/nginx.conf`.
+      Defaults to a common docker-image-style layout
+      (`root/etc/nginx/nginx.conf`).
+    required: false
+    default: 'root/etc/nginx/nginx.conf'
+  templates_path:
+    description: >-
+      Repo-relative path to a directory containing `*.conf.template` files
+      (no leading `./`). Each `<name>.conf.template` is rendered via
+      `envsubst` into `<templates_target_dir>/<name>.conf` inside the
+      validation container. Missing or empty directories are tolerated —
+      only `nginx.conf` is validated in that case. Set to an empty string
+      to disable template rendering entirely.
+    required: false
+    default: 'root/etc/nginx/http.d'
+  template_vars:
+    description: >-
+      Newline-separated `KEY=VALUE` pairs forwarded to `envsubst` when
+      rendering templates. Only the listed keys are substituted (we pass
+      a positional `${KEY}` list to `envsubst`), so unrelated `${...}`
+      strings — for example nginx's own `$remote_addr`, `$status` — pass
+      through unchanged. Keys must match `[A-Za-z_][A-Za-z0-9_]*`;
+      values must not contain newlines.
+    required: false
+    default: ''
+  templates_target_dir:
+    description: >-
+      Absolute path inside the validation container where rendered
+      templates land. Must match the `include` directive in your
+      `nginx.conf`. The default works for the
+      `include /run/nginx/http.d/*.conf;` convention.
+    required: false
+    default: '/run/nginx/http.d'
+  nginx_image:
+    description: >-
+      Container image used for validation. Pin to a major + flavor (e.g.
+      `1.27-alpine`) so Dependabot's `docker` ecosystem can bump it. Any
+      OCI-compatible nginx image works as long as it ships `nginx` and
+      `envsubst` on `PATH` (the official images do).
+    required: false
+    default: 'docker.io/library/nginx:1.27-alpine'
+
+outputs:
+  validated:
+    description: '`true` when `nginx -t` exits 0; otherwise the step fails before this is written.'
+    value: ${{ steps.validate.outputs.validated }}
+
+runs:
+  using: composite
+  steps:
+    - id: validate
+      shell: bash
+      env:
+        CONFIG_PATH: ${{ inputs.config_path }}
+        TEMPLATES_PATH: ${{ inputs.templates_path }}
+        TEMPLATE_VARS: ${{ inputs.template_vars }}
+        TEMPLATES_TARGET_DIR: ${{ inputs.templates_target_dir }}
+        NGINX_IMAGE: ${{ inputs.nginx_image }}
+      run: bash "${GITHUB_ACTION_PATH}/src/validate.sh"
