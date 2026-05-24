@@ -5,7 +5,7 @@
 **Do not open public GitHub issues for security vulnerabilities.**
 
 Report privately via
-**[GitHub Security Advisories](https://github.com/blackoutsecure/bos-nginx-config-validate/security/advisories/new)**
+**[GitHub Security Advisories](https://github.com/blackoutsecure/bos-nginx-config-validator/security/advisories/new)**
 ("Report a vulnerability"). This delivers the report to maintainers only
 and provides a coordinated disclosure workflow.
 
@@ -26,13 +26,13 @@ provide a remediation plan or disposition within **14 days**.
 1. **Pin to a major version tag**, never to `main`:
 
    ```yaml
-   - uses: blackoutsecure/bos-nginx-config-validate@v1
+   - uses: blackoutsecure/bos-nginx-config-validator@v1
    ```
 
    For audit-grade pinning, use the commit SHA:
 
    ```yaml
-   - uses: blackoutsecure/bos-nginx-config-validate@<full-sha>  # v1.0.0
+   - uses: blackoutsecure/bos-nginx-config-validator@<full-sha>  # v1.0.0
    ```
 
 2. **Restrict workflow permissions**. The action itself only needs the
@@ -48,7 +48,7 @@ provide a remediation plan or disposition within **14 days**.
    Pin to a digest for the strongest guarantee:
 
    ```yaml
-   - uses: blackoutsecure/bos-nginx-config-validate@v1
+   - uses: blackoutsecure/bos-nginx-config-validator@v1
      with:
        nginx_image: docker.io/library/nginx@sha256:<digest>
    ```

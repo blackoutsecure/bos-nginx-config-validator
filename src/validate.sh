@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Blackout Secure Nginx Config Validate — validation script
+# Blackout Secure Nginx Config Validator — validation script
 # Copyright © 2025-2026 Blackout Secure
 # Licensed under Apache License 2.0
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -25,7 +25,7 @@
 set -euo pipefail
 
 die() {
-    echo "::error::nginx-config-validate: $*" >&2
+    echo "::error::nginx-config-validator: $*" >&2
     exit 1
 }
 
@@ -111,7 +111,7 @@ if [ "${#var_names[@]}" -gt 0 ]; then
     envsubst_keys="${var_names[*]}"
 fi
 
-echo "::group::nginx-config-validate: inputs"
+echo "::group::nginx-config-validator: inputs"
 echo "  config_path:          ${CONFIG_PATH}"
 echo "  templates_path:       ${TEMPLATES_PATH:-(none)}"
 echo "  templates_target_dir: ${TEMPLATES_TARGET_DIR}"
@@ -134,12 +134,12 @@ if [ -n "${TEMPLATES_PATH}" ] && [ -d "${TEMPLATES_PATH}" ]; then
     if [ "${tmpl_count}" -gt 0 ]; then
         mount_args+=(-v "${templates_abs}:/templates:ro")
         templates_mount="yes"
-        echo "nginx-config-validate: found ${tmpl_count} template(s) to render"
+        echo "nginx-config-validator: found ${tmpl_count} template(s) to render"
     else
-        echo "nginx-config-validate: no *.conf.template files in '${TEMPLATES_PATH}' — skipping template render"
+        echo "nginx-config-validator: no *.conf.template files in '${TEMPLATES_PATH}' — skipping template render"
     fi
 else
-    echo "nginx-config-validate: templates_path '${TEMPLATES_PATH:-(empty)}' missing or empty — skipping template render"
+    echo "nginx-config-validator: templates_path '${TEMPLATES_PATH:-(empty)}' missing or empty — skipping template render"
 fi
 
 # ── In-container script ─────────────────────────────────────────────────
@@ -161,7 +161,7 @@ fi
 
 if [ -d /templates ]; then
     if ! command -v envsubst >/dev/null 2>&1; then
-        echo "::error::nginx-config-validate: envsubst missing from image ${NGINX_IMAGE_IN}" >&2
+        echo "::error::nginx-config-validator: envsubst missing from image ${NGINX_IMAGE_IN}" >&2
         exit 2
     fi
     for tmpl in /templates/*.conf.template; do
@@ -200,7 +200,7 @@ if "${DOCKER_BIN}" run --rm \
     -c "${in_container_script}"; then
     echo "::endgroup::"
     emit_output "validated" "true"
-    echo "nginx-config-validate: ✓ nginx -t passed"
+    echo "nginx-config-validator: ✓ nginx -t passed"
 else
     rc=$?
     echo "::endgroup::"

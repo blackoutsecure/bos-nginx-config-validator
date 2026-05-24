@@ -1,16 +1,39 @@
-# OS
+# Repo-specific ignores live OUTSIDE the hub-managed marker block
+# below. The hub's `common` block already covers OS noise, editor
+# noise, .env*, and private-key patterns — only nginx-validator
+# test artefacts need to live here.
+
+# Local dev artefacts (repo-specific)
+/tmp-*
+test/output/
+
+# >>> bos-automation-hub:common >>>
+# Managed by https://github.com/blackoutsecure/bos-automation-hub — do not edit between markers.
+# OS noise
 .DS_Store
 Thumbs.db
+._*
 
-# IDE / editor
+# Editor / IDE noise
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Local dev artefacts
+# Local env files (NEVER commit credentials)
 .env
-.env.local
-/tmp-*
-test/output/
+.env.*
+!.env.example
+.envrc
+.direnv/
+
+# TLS / private keys
+.secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets.*
+# <<< bos-automation-hub:common <<<

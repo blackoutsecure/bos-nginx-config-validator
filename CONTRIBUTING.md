@@ -1,4 +1,4 @@
-# Contributing to Blackout Secure Nginx Config Validate
+# Contributing to Blackout Secure Nginx Config Validator
 
 Thank you for your interest in contributing.
 
@@ -6,7 +6,7 @@ Thank you for your interest in contributing.
 
 1. Fork the repository.
 2. Clone your fork:
-   `git clone https://github.com/your-username/bos-nginx-config-validate.git`
+   `git clone https://github.com/your-username/bos-nginx-config-validator.git`
 3. Create a feature branch: `git checkout -b feat/your-feature`.
 4. Install local tooling (all optional, but recommended):
    - [`shellcheck`](https://www.shellcheck.net/) — `brew install shellcheck` / `apt install shellcheck`
@@ -66,7 +66,7 @@ Docker is not available.
 
 ## Reporting issues
 
-- Use [GitHub Issues](https://github.com/blackoutsecure/bos-nginx-config-validate/issues)
+- Use [GitHub Issues](https://github.com/blackoutsecure/bos-nginx-config-validator/issues)
   for bug reports.
 - Include the failing run URL, sanitized inputs, and the relevant section
   of your `nginx.conf` if applicable.
