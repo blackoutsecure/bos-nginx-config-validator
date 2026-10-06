@@ -204,12 +204,11 @@ gate behavior changes; the root Launchpad config is no longer active.
 
 ### CI gate
 
-Pushes and pull requests run the hub's reusable `bos-universal-security.yml`, reported as a
-single required check. It runs markdownlint, yamllint, shellcheck, and actionlint; ESLint,
-Prettier, Ruff, pytest, and Bats where the repository has them; `bos-code-scanning-kit`
-(secret scan, SAST, GHAS posture) and CodeQL; dependency review; and compliance checks for
-the canonical README header and a conventional-commit PR title
-(`feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert: subject`).
+The managed receiver delegates its selected security, release, metadata and Marketplace
+operations to hub reusables. It does not itself run on pull requests; this repository's
+PR-time CodeQL configuration is separate. A passing CodeQL check is not evidence that
+every hub security or validation operation ran. Keep the local Bats and shell checks
+above as part of change validation, and preserve the canonical authorization boundary.
 
 Every `uses:` reference in a workflow must be a commit SHA with a trailing version comment,
 for example `actions/checkout@<sha> # v4.2.2`.
