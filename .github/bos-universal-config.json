@@ -1,0 +1,8 @@
+{
+  "managed_file_sync": {
+    "services": [
+      "common",
+      "lf_line_endings"
+    ]
+  }
+}
