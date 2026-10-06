@@ -360,6 +360,12 @@ family does) or build a custom LSIO image with `gettext` baked in.
 
 ## 🔐 Permissions
 
+Repository maintenance is routed through the hub-managed Gatekeeper caller.
+Its configuration is [`.github/bos-universal-config.json`](.github/bos-universal-config.json),
+which preserves the legacy `common` and `lf_line_endings` sync services without
+enabling publication or deployment stages. This replaces the obsolete Launchpad
+caller; `bos-launchpad-config.json` is retained only as historical configuration.
+
 The action itself only needs the default `contents: read`. It does not
 write to the repo, call the GitHub API, or upload artifacts.
 
