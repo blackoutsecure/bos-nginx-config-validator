@@ -597,7 +597,7 @@ jobs:
       && !cancelled()
       && needs.parse-config.result == 'success'
       && (needs.preflight.result == 'success' || needs.preflight.result == 'skipped')
-      && github.ref_name == 'dev'
+      && needs.parse-config.outputs.target_ref == 'dev'
       && (github.event_name != 'workflow_dispatch' || inputs.operation == 'full' || inputs.operation == 'release_only' || inputs.operation == 'security_only')
     permissions:
       contents: write # monitor tracking-file commit + GitHub Release publish
@@ -789,7 +789,7 @@ jobs:
       && !cancelled()
       && needs.parse-config.result == 'success'
       && (needs.preflight.result == 'success' || needs.preflight.result == 'skipped')
-      && github.ref_name == 'main'
+      && needs.parse-config.outputs.target_ref == 'main'
       && (github.event_name != 'workflow_dispatch' || inputs.operation == 'full' || inputs.operation == 'release_only' || inputs.operation == 'security_only')
     permissions:
       contents: write # monitor tracking-file commit + GitHub Release publish
@@ -986,13 +986,13 @@ jobs:
       - release-dev
       - release-main
     if: always() && github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(startsWith(vars.DEFAULT_RUNNER || 'ubuntu-latest', '[') && (vars.DEFAULT_RUNNER || 'ubuntu-latest') || format('"{0}"', vars.DEFAULT_RUNNER || 'ubuntu-latest')) }}
     timeout-minutes: 2
     steps:
       - name: Verify selected route executed
         env:
           OPERATION: ${{ inputs.operation }}
-          TARGET_REF: ${{ github.ref_name }}
+          TARGET_REF: ${{ needs.parse-config.outputs.target_ref }}
           PARSE_RESULT: ${{ needs.parse-config.result }}
           SYNC_DEV_RESULT: ${{ needs.sync-check-dev.result }}
           SYNC_MAIN_RESULT: ${{ needs.sync-check-main.result }}

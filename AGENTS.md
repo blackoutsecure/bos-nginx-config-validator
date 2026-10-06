@@ -57,14 +57,13 @@ There is no `npm`, `pip`, `make`, or `ruff` target here. Do not invent one.
 
 ## Validating changes
 
-CI is dispatched entirely from the hub. The only workflow file on disk is
-`.github/workflows/bos-universal-launchpad-kicker.yml`, firing on a six-hourly schedule, on `push` to
-`main` for a fixed path list, and on `workflow_dispatch`. Its jobs run in order: `parse-config`
-(checkout, read `bos-launchpad-config.json` through the hub's `shared/launchpad-config` action,
-summarize it), `managed-files-guard` (fails when `sync_managed_files` is `false` and managed files
-still exist on `main`), then `release`, which calls the hub's reusable
-`bos-universal-launchpad.yml@main`. The organization security gate, marketplace validation, and
-promotion all run inside those hub reusables.
+Automation is dispatched through the hub-managed
+`.github/workflows/bos-universal-gatekeeper-kicker.yml` on schedules, pushes to `dev`/`main`,
+and manual dispatch. Authorization precedes path filtering, runtime-ref resolution, managed
+sync, config parsing, optional runner preflight, and the selected route. Config comes from
+`.github/bos-universal-config.json`; release, security, metadata and Marketplace operations
+delegate to hub reusables. The obsolete Launchpad caller is removed. This receiver does not
+declare a pull-request trigger; PR-time CodeQL is configured separately.
 
 Locally, narrowest-first: `bash -n src/validate.sh`, then `shellcheck src/validate.sh`, then the
 single Bats case covering your branch via `--filter`, then all of `bats test/`, then `actionlint` if
@@ -90,8 +89,9 @@ test/unit/validate.bats                       Bats suite; stubs docker via DOCKE
 test/fixtures/basic/nginx.conf                Config that includes /run/nginx/http.d/*.conf
 test/fixtures/basic/http.d/default.conf.template  Template mixing ${APP_PORT} and $remote_addr
 test/fixtures/plain/nginx.conf                Self-contained config, no include, no templates
-bos-launchpad-config.json                     Repo-owned launchpad config read by the kicker
-.github/workflows/bos-universal-launchpad-kicker.yml  Hub-managed dispatch front door
+bos-launchpad-config.json                     Historical configuration, no longer read by the caller
+.github/bos-universal-config.json             Repo-owned managed service and gate configuration
+.github/workflows/bos-universal-gatekeeper-kicker.yml  Hub-managed dispatch front door
 .github/dependabot.yml                        github-actions ecosystem only, target-branch dev
 .editorconfig                                 4-space indent for *.sh, outside the managed block
 .markdownlint.yaml                            MD013/MD028/MD033/MD034/MD041 relaxed
@@ -140,25 +140,17 @@ add a rejection and an acceptance case to `test/unit/validate.bats`, and update 
 table. New container-side behaviour goes in `in_container_script` and needs a real `docker run`,
 because Bats cannot reach it.
 
-### `bos-launchpad-config.json` and the launchpad kicker
+### Universal config and the Gatekeeper caller
 
-This repository uses the launchpad kicker, not the gatekeeper kicker most `blackoutsecure` action
-repos carry. `.github/workflows/bos-universal-launchpad-kicker.yml` is hub-managed and must not be
-hand-edited; behaviour comes from the repo-root `bos-launchpad-config.json`, whose schema is owned by
-`bos-automation-hub`. The kicker's `parse-config` job runs the hub's `shared/launchpad-config@main`
-action to read that JSON into a single `cfg` output, and every downstream input is a
-`fromJson(needs.parse-config.outputs.cfg)` lookup with a literal fallback, covering `upstream.*`,
-`stages.*` (`docker`, `balena`, `github_release`, `companion_docker`), `docker.*`, `scout.*`,
-`balena.*`, `release.*`, `security_scan.*`, `repo_metadata.*`, `triggers.force_on_push`, and
-`platforms`.
+`.github/workflows/bos-universal-gatekeeper-kicker.yml` is an exact copy of the hub's canonical
+managed template, not a locally maintained workflow. Its config parser accepts both the flat
+development and nested promoted action layouts. Resolved runtime refs drive release routing;
+configured preflight must succeed before a routed operation starts.
 
-Because every stage defaults off, a minimal file is a valid file. The current one is
-`{"sync_files": {"services": ["common", "lf_line_endings"]}}`, enabling only the two managed-file-sync
-services this repository consumes — matching the `bos-automation-hub:common` markers in
-`.editorconfig` and `.gitignore` and `bos-automation-hub:lf_line_endings` in `.gitattributes`. No
-`stages.*` key is set, so the Docker, Balena, companion-Docker, and GitHub Release stages stay off;
-this is a bash action with nothing to build or publish. Change gate or stage behaviour here, never in
-the kicker.
+`.github/bos-universal-config.json` preserves the legacy `common` and `lf_line_endings` services
+under `managed_file_sync`. No publication or deployment stage is enabled. The old
+`bos-launchpad-config.json` remains historical and is not read by the current caller.
+Change repository policy in universal config and template behavior at the hub source.
 
 ## Conventions
 
@@ -200,16 +192,15 @@ copy in this repository:
 
 - `LICENSE`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`
 - `.github/FUNDING.yml`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/`
-- the managed kicker workflow under `.github/workflows/` — here that is
-  `bos-universal-launchpad-kicker.yml`, not the gatekeeper kicker other action repos carry
+- `.github/workflows/bos-universal-gatekeeper-kicker.yml`
 - the `# >>> managed-file-sync:<service> >>> ... # <<< managed-file-sync:<service> <<<`
   delimited blocks inside `.editorconfig`, `.markdownlint.yaml`, `.shellcheckrc`,
   `.yamllint.yml`, `.gitignore`, and `README.md` — here the on-disk marker namespace is
   `bos-automation-hub:<service>` and the blocks present are in `.editorconfig`,
   `.gitattributes`, `.gitignore`, and `.github/dependabot.yml`
 
-This repository has no `.github/bos-universal-config.json`; the repo-root
-`bos-launchpad-config.json` is the repo-owned config and is where gate behaviour changes.
+`.github/bos-universal-config.json` is the repository-owned configuration and is where
+gate behavior changes; the root Launchpad config is no longer active.
 
 ### CI gate
 
@@ -243,7 +234,7 @@ for example `actions/checkout@<sha> # v4.2.2`.
 - Changing the default `nginx_image`, `auto_fill_unknown_vars`, or the uppercase-only heuristic.
 - Changing the hardening flag set, the two-tier probe, or the `--cap-add=CHOWN` exception.
 - Adding a runtime dependency, a network call, or a second `docker run`.
-- Adding a locally-defined workflow, or editing `bos-launchpad-config.json` to enable a stage.
+- Adding a locally-defined workflow, or enabling a stage in universal config.
 - Reconciling behaviour with the hub's parallel `.github/actions/nginx-config-validate`
   composite, which has its own consumers.
 
@@ -256,7 +247,7 @@ for example `actions/checkout@<sha> # v4.2.2`.
   hostnames, or credentials. Fixtures stay synthetic and minimal.
 - Never interpolate `${{ inputs.* }}` or any untrusted value into a `run:` body.
 - Never hand-edit centrally managed files, including
-  `.github/workflows/bos-universal-launchpad-kicker.yml` and the
+  `.github/workflows/bos-universal-gatekeeper-kicker.yml` and the
   `bos-automation-hub:<service>` marker blocks.
 - Never use an unpinned `uses:` ref; every reference is a commit SHA with a version comment.
 - Never push directly to `main` or move a version tag by hand; promotion runs from the hub.
