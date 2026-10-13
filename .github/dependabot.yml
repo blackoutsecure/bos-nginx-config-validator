@@ -38,21 +38,3 @@ updates:
     labels:
       - dependencies
 # <<< managed-file-sync:dependabot_actions <<<
-
-# >>> managed-file-sync:dependabot_pip >>>
-  - package-ecosystem: pip
-    directory: /
-    target-branch: dev
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: "Etc/UTC"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore"
-      include: scope
-    labels:
-      - dependencies
-      - python
-# <<< managed-file-sync:dependabot_pip <<<

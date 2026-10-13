@@ -3,6 +3,7 @@
     "services": [
       "common",
       "lf_line_endings"
-    ]
+    ],
+    "disabled_services": ["dependabot_pip"]
   }
 }
