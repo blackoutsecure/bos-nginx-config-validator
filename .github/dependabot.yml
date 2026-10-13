@@ -27,9 +27,20 @@
 version: 2
 updates:
 
-# >>> bos-automation-hub:dependabot_actions >>>
-# Managed by https://github.com/blackoutsecure/bos-automation-hub — do not edit between markers.
+
+# >>> managed-file-sync:dependabot_actions >>>
   - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - dependencies
+# <<< managed-file-sync:dependabot_actions <<<
+
+# >>> managed-file-sync:dependabot_pip >>>
+  - package-ecosystem: pip
     directory: /
     target-branch: dev
     schedule:
@@ -39,16 +50,9 @@ updates:
       timezone: "Etc/UTC"
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "ci"
+      prefix: "chore"
       include: scope
     labels:
       - dependencies
-      - github-actions
-    groups:
-      docker-actions:
-        patterns:
-          - "docker/*"
-      github-actions:
-        patterns:
-          - "actions/*"
-# <<< bos-automation-hub:dependabot_actions <<<
+      - python
+# <<< managed-file-sync:dependabot_pip <<<

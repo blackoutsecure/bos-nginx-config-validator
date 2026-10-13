@@ -502,3 +502,15 @@ details.
 ---
 
 **Made with care by [Blackout Secure](https://github.com/blackoutsecure)**
+
+<!-- >>> managed-file-sync:security_readme_pointer >>> -->
+## Security & secrets
+
+This repository is built with Blackout Secure's reusable GitHub Actions
+workflows. If you fork or self-host these workflows and need to provision
+your own credentials (GitHub App vs. PAT guidance, secret tiers, Docker
+Hub/Cloudflare/Balena setup walkthroughs), see the
+["Secrets pipelining strategy"](https://github.com/blackoutsecure/bos-automation-hub#secrets-pipelining-strategy)
+section of `bos-automation-hub`. To report a vulnerability, see
+[SECURITY.md](https://github.com/blackoutsecure/.github/blob/main/SECURITY.md).
+<!-- <<< managed-file-sync:security_readme_pointer <<< -->
